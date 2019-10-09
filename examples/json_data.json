@@ -1,0 +1,10 @@
+{"type":"track","time":1526101271000,"distinct_id":"bug29","properties":{"item_id":13245.0,"item_name":"\u7537\u58eb\u62a4\u8033\u4fdd\u6696\u9e2d\u820c\u76ae\u5e3d\u5e73\u9876\u516b\u89d2\u5e3d\u5934\u5c42\u725b\u76ae\u5e3d\u5b50\u65f6\u5c1a\u4f11\u95f2"},"event":"view","time_free":true}
+{"type":"track","time":1526101503000,"distinct_id":"bug29","properties":{"item_id":13245.0,"item_name":"\u7537\u58eb\u62a4\u8033\u4fdd\u6696\u9e2d\u820c\u76ae\u5e3d\u5e73\u9876\u516b\u89d2\u5e3d\u5934\u5c42\u725b\u76ae\u5e3d\u5b50\u65f6\u5c1a\u4f11\u95f2"},"event":"buy","time_free":true}
+{"type":"track","time":1526178032000,"distinct_id":"\u5c0f\u6b66","properties":{"item_id":23421.0,"item_name":"New Order Technique 2CD\u8c6a\u534e\u7248 \u6b27\u7248\u884c\u8d27 \u5168\u65b0\u672a\u62c6"}, "event":"view","time_free":true}
+{"type":"track","time":1526215373000,"distinct_id":"\u83e0\u83dc","properties":{"item_id":3442.0,"item_name":"NUK\u5b89\u629a\u5976\u5634\u5b9d\u5b9d\u9632\u80c0\u6c14\u5b89\u6170\u5976\u5634\u4e73\u80f6\u8fea\u58eb\u5c3c\u5b89\u7761\u578b"},"event":"view","time_free":true}
+{"type":"profile_set","time":1526263297951,"distinct_id":"bug29","properties":{"gender":"\u7537","is_member":true,"score":131.0},"time_free":true}
+{"type":"profile_set","time":1526263297951,"distinct_id":"\u5c0f\u6b66","properties":{"gender":"\u5973","is_member":false},"time_free":true}
+{"type":"item_set","properties":{"name":"yuejz","OrderPaid":12.1},"item_id":"item_id","time":1566022866941,"item_type":"item_type"}
+{"type":"item_set","properties":{"name":"yuejz"},"item_id":"item_id","time":1566022866941,"item_type":"item_type"}
+{"type":"item_set","time":1566023226152,"properties":{"OrderTime":"2019-07-01 12:02:36","OrderPaid":12.1},"item_id":"item_id","item_type":"item_type"}
+{"type":"item_delete","item_id":"item_id","properties":{"OrderPaid":12.1,"OrderTime":"2019-07-01 12:02:36"},"item_type":"item_type"}
