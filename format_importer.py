@@ -24,6 +24,9 @@ import re
 import sys
 import time
 import traceback
+#忽略证书校验
+import ssl
+ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
     import urllib.parse as urllib
@@ -75,6 +78,32 @@ class SAArgumentParser(argparse.ArgumentParser):
         first = fields[0].strip()
         second = ':'.join(fields[1:]).strip()
         return ['--%s' % first, second]
+
+    def _read_args_from_files(self, arg_strings):
+        # expand arguments referencing files
+        new_arg_strings = []
+        for arg_string in arg_strings:
+
+            # for regular arguments, just add them back into the list
+            if not arg_string or arg_string[0] not in self.fromfile_prefix_chars:
+                new_arg_strings.append(arg_string)
+
+            # replace arguments referencing files with the file content
+            else:
+                try:
+                    with open(arg_string[1:],encoding = 'utf-8') as args_file:
+                        arg_strings = []
+                        for arg_line in args_file.read().splitlines():
+                            for arg in self.convert_arg_line_to_args(arg_line):
+                                arg_strings.append(arg)
+                        arg_strings = self._read_args_from_files(arg_strings)
+                        new_arg_strings.extend(arg_strings)
+                except OSError:
+                    err = _sys.exc_info()[1]
+                    self.error(str(err))
+
+        # return the modified argument list
+        return new_arg_strings
 
 ####
 #
@@ -492,13 +521,13 @@ class CsvFormatter(BaseFormatter):
             querys = urllib.parse_qs(urllib.urlparse(args.url).query)
             self.project = querys.get('project', ['default'])[0]
         # 3. 初始化csv reader
-        self.fd = open(args.filename, 'r')
+        self.fd = open(args.filename, 'r',encoding=args.file_encoding)
         self.reader = csv.DictReader(self.fd, **csv_params)
         self.events = set()
         # 4. 获取schema 中间会用fd和reader 所以使用完要reset
         self.column_schema = self.__get_column_schema(skip_identify_list, property_list, args.csv_prefetch_lines)
         self.fd.close()
-        self.fd = open(args.filename, 'r')
+        self.fd = open(args.filename, 'r',encoding=args.file_encoding)
         self.reader = csv.DictReader(self.fd, **csv_params)
 
         logger.info('column_schema: %s' % pprint.pformat(self.column_schema, width=200))
@@ -550,6 +579,10 @@ class CsvFormatter(BaseFormatter):
                 type=int,
                 help='csv文件预读行数，预读用于判断列的类型，默认为-1，即预读整个文件',
                 default='-1')
+        parser.add_argument('--file_encoding',
+                            type=str,
+                            help='csv文件编码格式，默认为 gbk 编码',
+                            default='utf-8')
 
     def get_total_num(self):
         '''返回总条数'''
