@@ -35,7 +35,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.0'
+__version__ = '1.13.1'
 
 # build的时候会把python sdk和pypinyin,pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
