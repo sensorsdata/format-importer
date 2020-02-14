@@ -26,6 +26,7 @@ import time
 import traceback
 #忽略证书校验
 import ssl
+import sys as _sys
 ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
@@ -35,7 +36,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.1'
+__version__ = '1.13.2'
 
 # build的时候会把python sdk和pypinyin,pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -460,7 +461,6 @@ class BaseFormatter(object):
         timestamp = self.get_timestamp(record)
         properties = self.parse_property(record)
         properties['$time'] = timestamp
-        print(record)
         self.sa.track(distinct_id, event, properties, is_login_id=self.args.is_login)
 
     def send_profile(self, record):
@@ -665,7 +665,7 @@ class CsvFormatter(BaseFormatter):
                 event_not_exists = [event for event in self.events if event not in event_dict]
                 if not event_not_exists:
                     break
-                logger.warn('events%s have not loaded yet. waiting for 0.5 minute.' % event_not_exists)
+                logger.warning('events%s have not loaded yet. waiting for 0.5 minute.' % event_not_exists)
 
             # 3.取这个event所有properties，得到各property的id
             for i in range(10):
@@ -683,7 +683,7 @@ class CsvFormatter(BaseFormatter):
                     all_properties = [x['ename'] for x in self.column_schema.values()]
                     property_not_exists = [x for x in all_properties if x not in properties_dict]
                     if property_not_exists:
-                        logger.warn('in event %s, properties%s have not loaded yet. waiting for 0.5 minute.' %
+                        logger.warning('in event %s, properties%s have not loaded yet. waiting for 0.5 minute.' %
                                 (event, property_not_exists))
                         all_checked = False
                         break
@@ -757,7 +757,7 @@ class CsvFormatter(BaseFormatter):
                     elif k not in column_type:
                         column_type[k] = guess_type
         except csv.Error as e:
-            logger.warn('csv error near line %d' % self.reader.line_num)
+            logger.warning('csv error near line %d' % self.reader.line_num)
             raise e
         self.total_num = -1 if prefetch_lines > 0 else total_num
         # 2. 增加ename
@@ -799,8 +799,8 @@ class CsvFormatter(BaseFormatter):
                 logger.debug('content:\n%s\nheaders\n%s\nresponse\n%s' % (content, headers, response_content))
                 return response_content
             except Exception as e:
-                logger.warn(e)
-                logger.warn('failed to request %s for %d times' % (url, i))
+                logger.warning(e)
+                logger.warning('failed to request %s for %d times' % (url, i))
                 logger.debug(traceback.format_exc())
         else:
             raise Exception('failed to request %s!' % url)
@@ -982,8 +982,8 @@ class NginxFormatter(BaseFormatter):
             # 1. 正则解析Nginx日志
             m = self.log_format_pattern.match(line)
             if not m:
-                logger.warn('invalid log line')
-                logger.warn(line)
+                logger.warning('invalid log line')
+                logger.warning(line)
                 raise Exception('log line not matched')
             values = m.groups()
             record = dict([(x, y) for x, y in zip(self.columns, values) if y])
@@ -1152,7 +1152,7 @@ class SQLFormatter(BaseFormatter):
             elif value == 0:
                 return False
             else:
-                raise Exception('invalid %s value %d(bool property should be either 0 or 1' % (x, y))
+                raise Exception('invalid %s value %d(bool property should be either 0 or 1' % (key, value))
         return value
 
     def get_total_num(self):
@@ -1300,7 +1300,7 @@ class JsonFormatter(BaseFormatter):
                     raise Exception('invalid path %s: %s is not a file' % (args.path, f))
                 self.file_list.append(abs_filename)
         else:
-            raise Exception('invalid path %s: cannot find file or directory' % (args.path, f))
+            raise Exception('invalid path %s: %s cannot find file or directory' % (args.path, f))
         self.file_list = sorted(self.file_list)
         logger.info('total %d json files' % len(self.file_list))
         logger.debug(self.file_list)
@@ -1483,9 +1483,9 @@ def main():
             counter['total_write'] += 1
         except Exception as e:
             counter['error'] += 1
-            logger.warn('failed to parse line %d' % counter['total_read'])
-            logger.warn(traceback.format_exc())
-            logger.warn(e)
+            logger.warning('failed to parse line %d' % counter['total_read'])
+            logger.warning(traceback.format_exc())
+            logger.warning(e)
             if args.quit_on_error:
                 error = True
                 break
