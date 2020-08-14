@@ -36,7 +36,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.2'
+__version__ = '1.13.3'
 
 # build的时候会把python sdk和pypinyin,pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -358,7 +358,7 @@ class BaseFormatter(object):
             self.skip_cols = [args.item_type]
             self.skip_cols.append(args.item_id)
         else:
-            self.skip_cols = [args.distinct_id_from]
+            self.skip_cols = [] if args.subparser_name.startswith('csv') or args.subparser_name.startswith('nginx') else [args.distinct_id_from]
             if self.is_event:
                 if args.event_from:
                     self.skip_cols.append(args.event_from)
