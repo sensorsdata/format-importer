@@ -36,7 +36,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.3'
+__version__ = '1.13.4'
 
 # build的时候会把python sdk和pypinyin,pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -358,7 +358,7 @@ class BaseFormatter(object):
             self.skip_cols = [args.item_type]
             self.skip_cols.append(args.item_id)
         else:
-            self.skip_cols = [] if args.subparser_name.startswith('csv') or args.subparser_name.startswith('nginx') else [args.distinct_id_from]
+            self.skip_cols = [args.distinct_id_from]
             if self.is_event:
                 if args.event_from:
                     self.skip_cols.append(args.event_from)
@@ -513,6 +513,9 @@ class CsvFormatter(BaseFormatter):
         self.ignore_value.append('')
         logger.debug('ignore %s' % self.ignore_value)
         self.subparser_name = args.subparser_name
+        # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
+        if (not self.is_item) and (args.property_list != None) and (args.property_list != ""):
+            self.skip_cols.remove(args.distinct_id_from)
         # 2. 记下url username password close()的时候要更新元数据
         self.add_cname = False
         if args.add_cname:
@@ -862,6 +865,9 @@ class NginxFormatter(BaseFormatter):
         self.ignore_value = args.ignore_value
         self.ignore_value.append('')
         logger.debug('ignore %s' % self.ignore_value)
+        # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
+        if (not self.is_item) and (args.property_list != None) and (args.property_list != ""):
+            self.skip_cols.remove(args.distinct_id_from)
         # 生成columns
         self.columns, self.log_format_pattern = self.__compile_log_format(args.log_format)
         self.nginx_fd = open(args.filename, 'r')
