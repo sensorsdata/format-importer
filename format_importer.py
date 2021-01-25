@@ -36,7 +36,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.4'
+__version__ = '1.13.5'
 
 # build的时候会把python sdk和pypinyin,pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -272,6 +272,14 @@ def parse_args():
                                     help='必填，指定 item 的 item_id',
                                     required=True)
 
+    # 2.4 signup
+    signup_parent_parser = SAArgumentParser(add_help=False, parents=[parent_parser])
+    signup_parent_parser.add_argument('--login_id_from',
+            help='必填，指定用户关联的登录 ID',
+            required=True)
+    signup_parent_parser.add_argument('--anonymous_id_from',
+            help='必填，指定用户关联的匿名 ID',
+            required=True)
 
     # 3. 支持五种数据格式
     parser = SAArgumentParser(description='通用格式文件导入工具,版本号%s' % __version__)
@@ -304,6 +312,14 @@ def parse_args():
             description=formatter_class.__doc__,
             fromfile_prefix_chars='@')
         formatter_class.add_parser(sub_parser)
+        sub_parser = subparsers.add_parser(
+            '%s_signup' % format_name,
+            parents=[signup_parent_parser],
+            help='%s, 导入用户关联' % formatter_class.__doc__.splitlines()[0],
+            formatter_class=argparse.RawDescriptionHelpFormatter,
+            description=formatter_class.__doc__,
+            fromfile_prefix_chars='@')
+        formatter_class.add_parser(sub_parser)
     # 3.2 json直接继承parent parser 不区分event/profile/item
     sub_parser = subparsers.add_parser(
             'json',
@@ -332,6 +348,7 @@ class BaseFormatter(object):
         self.args = args
         self.is_event = args.subparser_name.endswith('_event')
         self.is_item = args.subparser_name.endswith('_item')
+        self.is_signup = args.subparser_name.endswith('_signup')
         # 如果是event 获取event和time的方式需要根据传递参数来判断
         # event 两种
         if self.is_event:
@@ -351,12 +368,17 @@ class BaseFormatter(object):
         # 发送 item
         if self.is_item:
             self.send = self.send_item
-
+        # 发送 signup
+        if self.is_signup:
+            self.send = self.send_signup
 
         # 过滤掉用于获取event/time/user的列
         if self.is_item:
             self.skip_cols = [args.item_type]
             self.skip_cols.append(args.item_id)
+        elif self.is_signup:
+            self.skip_cols = [args.login_id_from]
+            self.skip_cols.append(args.anonymous_id_from)
         else:
             self.skip_cols = [args.distinct_id_from]
             if self.is_event:
@@ -400,6 +422,17 @@ class BaseFormatter(object):
                             % (self.args.item_id, record))
         return record[self.args.item_id]
 
+    def get_login_id(self,record):
+        if self.args.login_id_from not in record:
+            raise Exception('cannot find login_id[%s] in record[%s]' \
+                            % (self.args.login_id_from, record))
+        return record[self.args.login_id_from]
+
+    def get_anonymous_id(self,record):
+        if self.args.anonymous_id_from not in record:
+            raise Exception('cannot find anonymous_id[%s] in record[%s]' \
+                            % (self.args.anonymous_id_from, record))
+        return record[self.args.anonymous_id_from]
 
     def __get_event_from_record(self, record):
         """获取event 方式一 使用传递参数的字段名"""
@@ -475,6 +508,11 @@ class BaseFormatter(object):
         properties = self.parse_property(record)
         self.sa.item_set(item_type=item_type,item_id=item_id,properties=properties)
 
+    def send_signup(self,record):
+        login_id = str(self.get_login_id(record))
+        anonymous_id = str(self.get_anonymous_id(record))
+        self.sa.track_signup(login_id,anonymous_id)
+
     def close(self):
         '''清理方法'''
         self.sa.close()
@@ -514,7 +552,7 @@ class CsvFormatter(BaseFormatter):
         logger.debug('ignore %s' % self.ignore_value)
         self.subparser_name = args.subparser_name
         # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
-        if (not self.is_item) and (args.property_list != None) and (args.property_list != ""):
+        if (not self.is_item) and (not self.is_signup) and (args.property_list != None) and (args.property_list != ""):
             self.skip_cols.remove(args.distinct_id_from)
         # 2. 记下url username password close()的时候要更新元数据
         self.add_cname = False
@@ -866,7 +904,7 @@ class NginxFormatter(BaseFormatter):
         self.ignore_value.append('')
         logger.debug('ignore %s' % self.ignore_value)
         # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
-        if (not self.is_item) and (args.property_list != None) and (args.property_list != ""):
+        if (not self.is_item) and (not self.is_signup) and (args.property_list != None) and (args.property_list != ""):
             self.skip_cols.remove(args.distinct_id_from)
         # 生成columns
         self.columns, self.log_format_pattern = self.__compile_log_format(args.log_format)

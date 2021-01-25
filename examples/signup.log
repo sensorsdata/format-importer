@@ -1,0 +1,2 @@
+123.4.5.6 - [12/May/2018:13:01:11 +0800] "POST /login?user_id=bug29&device_id=0c0c93f5-c747-4c1a-acfc-e75279720da1" 200 1127 "Mozilla/5.0 (Windows NT 6.1; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/45.0.2454.85 Safari/537.36" "http://fake_web.com/login.html" "男" "131"
+123.4.5.7 - [13/May/2018:10:20:32 +0800] "POST /login?user_id=%e5%b0%8f%e6%ad%a6&device_id=ac0eadfb-cd5d-44b6-8a21-079862773c11" 200 1127 "Mozilla/5.0 (Windows NT 6.1) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/31.0.1650.63 Safari/537.36" "http://www.baidu.com?q=abc" "女" ""
