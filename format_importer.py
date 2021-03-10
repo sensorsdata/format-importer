@@ -24,9 +24,10 @@ import re
 import sys
 import time
 import traceback
-#忽略证书校验
+# 忽略证书校验
 import ssl
 import sys as _sys
+
 ssl._create_default_https_context = ssl._create_unverified_context
 
 try:
@@ -36,9 +37,9 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.5'
+__version__ = '1.13.6'
 
-# build的时候会把python sdk和pypinyin,pymysql都拷贝过来
+# build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
 sys.path.append(current_dir)
 import pypinyin
@@ -61,8 +62,10 @@ fa.setLevel(logging.DEBUG)
 fa.setFormatter(formater)
 logger.addHandler(fa)
 
+
 class SAArgumentParser(argparse.ArgumentParser):
     '''支持从文件读取 文件可以包含注释空行'''
+
     def convert_arg_line_to_args(self, arg_line):
         strip_line = arg_line.strip()
         # 空行
@@ -92,7 +95,7 @@ class SAArgumentParser(argparse.ArgumentParser):
             # replace arguments referencing files with the file content
             else:
                 try:
-                    with open(arg_string[1:],encoding = 'utf-8') as args_file:
+                    with open(arg_string[1:], encoding='utf-8') as args_file:
                         arg_strings = []
                         for arg_line in args_file.read().splitlines():
                             for arg in self.convert_arg_line_to_args(arg_line):
@@ -105,6 +108,7 @@ class SAArgumentParser(argparse.ArgumentParser):
 
         # return the modified argument list
         return new_arg_strings
+
 
 ####
 #
@@ -153,6 +157,7 @@ def guess_str_type(target_str):
     # 3. 都不是 则是string
     return 'string'
 
+
 def format_str(target_str, str_type):
     if str_type == 'number':
         if '.' in target_str:
@@ -171,6 +176,7 @@ def format_str(target_str, str_type):
     else:
         return target_str
 
+
 def check_url(url):
     '''
     导入url: http://xxxx:8106/sa?project=xxx
@@ -178,13 +184,14 @@ def check_url(url):
     '''
     debug_url = urllib.urlparse(url)
     ## 将 URI Path 替换成 Debug 模式的 '/debug'
-    debug_url = debug_url._replace(path = '/debug')
+    debug_url = debug_url._replace(path='/debug')
     logger.debug('debug url: %s' % debug_url.geturl())
     with urllib2.urlopen(debug_url.geturl()) as f:
         response = f.read().decode('utf8').strip()
         logger.debug('response: %s' % response)
         if response != 'Sensors Analytics is ready to receive your data!':
             raise Exception('invalid url %s' % url)
+
 
 def parse_args():
     """
@@ -199,69 +206,69 @@ def parse_args():
     # 1.1. url/path/project
     consumer_group = parent_parser.add_mutually_exclusive_group(required=True)
     consumer_group.add_argument('--url', '-l',
-            help='和--output_file选一个必填,发送数据的url，比如http://localhost:8106/sa, ' \
-                    '如果是云版则类似http://abc.cloud.sensorsdata.cn:8106/sa?token=xxx, ' \
-                    'token请联系我们获取. 注意这个参数和--output_file不能同时使用',
-            default=None)
+                                help='和--output_file选一个必填,发送数据的url，比如http://localhost:8106/sa, ' \
+                                     '如果是云版则类似http://abc.cloud.sensorsdata.cn:8106/sa?token=xxx, ' \
+                                     'token请联系我们获取. 注意这个参数和--output_file不能同时使用',
+                                default=None)
     consumer_group.add_argument('--output_file', '-O',
-            help='和--url选一个必填, 输出的文件名，输出每行是一个符合格式的json。注意这个参数和--url不可同时使用',
-            default=None)
+                                help='和--url选一个必填, 输出的文件名，输出每行是一个符合格式的json。注意这个参数和--url不可同时使用',
+                                default=None)
     parent_parser.add_argument('--project', '-j',
-            help='可选，指定的project名，默认是None',
-            default=None,
-            required=False)
+                               help='可选，指定的project名，默认是None',
+                               default=None,
+                               required=False)
 
     # 1.2 断点续传
     parent_parser.add_argument('--skip_cnt', '-c',
-            type=int,
-            help='第一次运行请忽略，如果运行失败，需要跳过成功的那集行，这个就是指定跳过几行的',
-            default=0)
+                               type=int,
+                               help='第一次运行请忽略，如果运行失败，需要跳过成功的那集行，这个就是指定跳过几行的',
+                               default=0)
     parent_parser.add_argument('--quit_on_error', '-Q',
-            action='store_true',
-            help='如果选中，则出现一条错误日志就会退出',
-            default=False)
+                               action='store_true',
+                               help='如果选中，则出现一条错误日志就会退出',
+                               default=False)
     parent_parser.add_argument('--debug', '-D',
-            action='store_true',
-            help='如果指定了就是使用debug模式，不会导入数据，只在stdout显示数据，参见(https://www.sensorsdata.cn/manual/debug_mode.html)',
-            default=False)
+                               action='store_true',
+                               help='如果指定了就是使用debug模式，不会导入数据，只在stdout显示数据，参见(https://www.sensorsdata.cn/manual/debug_mode.html)',
+                               default=False)
 
     # 2. profile/event有不同的选项
     # 2.1 profile 需要指定distinct_id
     profile_parent_parser = SAArgumentParser(add_help=False, parents=[parent_parser])
     profile_parent_parser.add_argument('--distinct_id_from', '-df',
-            help='必填, 从哪个字段作为distinct_id，如果指定，则每条数据算作对应字段的用户的行为.',
-            required=True)
+                                       help='必填, 从哪个字段作为distinct_id，如果指定，则每条数据算作对应字段的用户的行为.',
+                                       required=True)
     profile_parent_parser.add_argument('--is_login',
-            help='可选参数, distinct_id是否是login id，默认不是.',
-            default=False,
-            action='store_true')
+                                       help='可选参数, distinct_id是否是login id，默认不是.',
+                                       default=False,
+                                       action='store_true')
 
     # 2.2 event
     event_parent_parser = SAArgumentParser(add_help=False, parents=[parent_parser])
     # 指定distinct_id
     event_parent_parser.add_argument('--distinct_id_from', '-df',
-            help='必填, 从哪个字段作为distinct_id，如果指定，则每条数据算作对应字段的用户的行为.',
-            required=True)
+                                     help='必填, 从哪个字段作为distinct_id，如果指定，则每条数据算作对应字段的用户的行为.',
+                                     required=True)
     event_parent_parser.add_argument('--is_login',
-            help='可选参数, distinct_id是否是login id，默认不是.',
-            default=False,
-            action='store_true')
+                                     help='可选参数, distinct_id是否是login id，默认不是.',
+                                     default=False,
+                                     action='store_true')
     # event必须要么指定event_from要么指定event_default
     event_group = event_parent_parser.add_mutually_exclusive_group(required=True)
     event_group.add_argument('--event_from', '-ef',
-            help='和event_default选一个必填。哪个字段作为event名，如果指定，则每条数据的事件名为对应字段的值。')
+                             help='和event_default选一个必填。哪个字段作为event名，如果指定，则每条数据的事件名为对应字段的值。')
     event_group.add_argument('--event_default', '-ed',
-            help='和event_from选一个必填。默认的event名，如果指定，则将所有数据都算作这个event的。')
+                             help='和event_from选一个必填。默认的event名，如果指定，则将所有数据都算作这个event的。')
     # timestammp必须要么指定timestamp_from 要么指定timestamp_default 要么都不指定
     timestamp_group = event_parent_parser.add_mutually_exclusive_group(required=False)
     timestamp_group.add_argument('--timestamp_from', '-tf',
-            help='哪个字段作为time, 如果指定，则每条数据对应的时间为对应字段的值.')
+                                 help='哪个字段作为time, 如果指定，则每条数据对应的时间为对应字段的值.')
     timestamp_group.add_argument('--timestamp_default', '-td',
-            help='默认的timestamp, 如果指定，则将所有数据都算作这个时间的事件。')
+                                 help='默认的timestamp, 如果指定，则将所有数据都算作这个时间的事件。')
     event_parent_parser.add_argument('--timestamp_format', '-fm',
-            help='和timestamp_from一起使用，如果指定, 并timestamp_from对应的字段是个字符串，可以通过这种方式指定时间格式。' \
-                    '默认是%%Y-%%m-%%d %%H:%%M:%%S',
-            default='%Y-%m-%d %H:%M:%S')
+                                     help='和timestamp_from一起使用，如果指定, 并timestamp_from对应的字段是个字符串，可以通过这种方式指定时间格式。' \
+                                          '默认是%%Y-%%m-%%d %%H:%%M:%%S',
+                                     default='%Y-%m-%d %H:%M:%S')
 
     # 2.3 item
     item_parent_parser = SAArgumentParser(add_help=False, parents=[parent_parser])
@@ -275,11 +282,11 @@ def parse_args():
     # 2.4 signup
     signup_parent_parser = SAArgumentParser(add_help=False, parents=[parent_parser])
     signup_parent_parser.add_argument('--login_id_from',
-            help='必填，指定用户关联的登录 ID',
-            required=True)
+                                      help='必填，指定用户关联的登录 ID',
+                                      required=True)
     signup_parent_parser.add_argument('--anonymous_id_from',
-            help='必填，指定用户关联的匿名 ID',
-            required=True)
+                                      help='必填，指定用户关联的匿名 ID',
+                                      required=True)
 
     # 3. 支持五种数据格式
     parser = SAArgumentParser(description='通用格式文件导入工具,版本号%s' % __version__)
@@ -322,12 +329,12 @@ def parse_args():
         formatter_class.add_parser(sub_parser)
     # 3.2 json直接继承parent parser 不区分event/profile/item
     sub_parser = subparsers.add_parser(
-            'json',
-            parents=[parent_parser],
-            help=JsonFormatter.__doc__.splitlines()[0],
-            formatter_class=argparse.RawDescriptionHelpFormatter,
-            description=JsonFormatter.__doc__,
-            fromfile_prefix_chars='@')
+        'json',
+        parents=[parent_parser],
+        help=JsonFormatter.__doc__.splitlines()[0],
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        description=JsonFormatter.__doc__,
+        fromfile_prefix_chars='@')
     JsonFormatter.add_parser(sub_parser)
 
     # 4. 解析
@@ -337,10 +344,11 @@ def parse_args():
         sys.exit(1)
     return args
 
+
 ######
 #
 # 从这里开始各个formater的实现
-# 
+#
 ######
 class BaseFormatter(object):
     def __init__(self, args, lib_detail):
@@ -387,7 +395,8 @@ class BaseFormatter(object):
                 if args.timestamp_from:
                     self.skip_cols.append(args.timestamp_from)
         # 记录导入信息的
-        lib_detail_title = {'mysql': 'MySQL', 'csv': 'csv', 'nginx': 'Nginx', 'oracle': 'Oracle'}[args.subparser_name.split('_')[0]]
+        lib_detail_title = {'mysql': 'MySQL', 'csv': 'csv', 'nginx': 'Nginx', 'oracle': 'Oracle'}[
+            args.subparser_name.split('_')[0]]
         self.default_properties = {
             '$lib': 'FormatImporter',
             '$lib_version': __version__,
@@ -401,13 +410,13 @@ class BaseFormatter(object):
             '$lib': self.default_properties['$lib'],
             '$lib_version': self.default_properties['$lib_version']
         })
-        self.sa._get_lib_properties = lambda:self.default_properties
+        self.sa._get_lib_properties = lambda: self.default_properties
 
     def get_distinct_id(self, record):
         """获取distinct_id 只有一种方式 就是使用传递参数的字段名"""
         if self.args.distinct_id_from not in record:
             raise Exception('cannot find distinct_id[%s] in record[%s]' \
-                    % (self.args.distinct_id_from, record))
+                            % (self.args.distinct_id_from, record))
         return record[self.args.distinct_id_from]
 
     def get_item_type(self, record):
@@ -416,19 +425,19 @@ class BaseFormatter(object):
                             % (self.args.item_type, record))
         return record[self.args.item_type]
 
-    def get_item_id(self,record):
+    def get_item_id(self, record):
         if self.args.item_id not in record:
             raise Exception('cannot find item_id[%s] in record[%s]' \
                             % (self.args.item_id, record))
         return record[self.args.item_id]
 
-    def get_login_id(self,record):
+    def get_login_id(self, record):
         if self.args.login_id_from not in record:
             raise Exception('cannot find login_id[%s] in record[%s]' \
                             % (self.args.login_id_from, record))
         return record[self.args.login_id_from]
 
-    def get_anonymous_id(self,record):
+    def get_anonymous_id(self, record):
         if self.args.anonymous_id_from not in record:
             raise Exception('cannot find anonymous_id[%s] in record[%s]' \
                             % (self.args.anonymous_id_from, record))
@@ -502,20 +511,21 @@ class BaseFormatter(object):
         properties = self.parse_property(record)
         self.sa.profile_set(distinct_id, properties, is_login_id=self.args.is_login)
 
-    def send_item(self,record):
+    def send_item(self, record):
         item_type = str(self.get_item_type(record))
         item_id = str(self.get_item_id(record))
         properties = self.parse_property(record)
-        self.sa.item_set(item_type=item_type,item_id=item_id,properties=properties)
+        self.sa.item_set(item_type=item_type, item_id=item_id, properties=properties)
 
-    def send_signup(self,record):
+    def send_signup(self, record):
         login_id = str(self.get_login_id(record))
         anonymous_id = str(self.get_anonymous_id(record))
-        self.sa.track_signup(login_id,anonymous_id)
+        self.sa.track_signup(login_id, anonymous_id)
 
     def close(self):
         '''清理方法'''
         self.sa.close()
+
 
 class CsvFormatter(BaseFormatter):
     """将csv格式文件导入
@@ -535,6 +545,7 @@ class CsvFormatter(BaseFormatter):
        也可以修改conf/csv_event.conf和conf/csv_profile.conf来填写所有必要参数
     """
     ename_pattern = re.compile(r'[\$]{0,1}[a-zA-Z0-9_]+$')
+
     def __init__(self, args):
         '''初始化方法'''
         super().__init__(args, args.filename)
@@ -562,13 +573,13 @@ class CsvFormatter(BaseFormatter):
             querys = urllib.parse_qs(urllib.urlparse(args.url).query)
             self.project = querys.get('project', ['default'])[0]
         # 3. 初始化csv reader
-        self.fd = open(args.filename, 'r',encoding=args.file_encoding)
+        self.fd = open(args.filename, 'r', encoding=args.file_encoding)
         self.reader = csv.DictReader(self.fd, **csv_params)
         self.events = set()
         # 4. 获取schema 中间会用fd和reader 所以使用完要reset
         self.column_schema = self.__get_column_schema(skip_identify_list, property_list, args.csv_prefetch_lines)
         self.fd.close()
-        self.fd = open(args.filename, 'r',encoding=args.file_encoding)
+        self.fd = open(args.filename, 'r', encoding=args.file_encoding)
         self.reader = csv.DictReader(self.fd, **csv_params)
 
         logger.info('column_schema: %s' % pprint.pformat(self.column_schema, width=200))
@@ -579,47 +590,47 @@ class CsvFormatter(BaseFormatter):
     def add_parser(cls, parser):
         '''初始化sub_parser'''
         parser.add_argument('--filename', '-f',
-                help='必填,csv文件名',
-                required=True)
+                            help='必填,csv文件名',
+                            required=True)
         parser.add_argument('--property_list', '-pl',
-                type=str,
-                help='用逗号分割选取的property, ' \
-                        '举例`-p name,time`将会将name和time两列作为property导入。' \
-                        '如果不填写则表示全部作为property导入',
-                default=None)
+                            type=str,
+                            help='用逗号分割选取的property, ' \
+                                 '举例`-p name,time`将会将name和time两列作为property导入。' \
+                                 '如果不填写则表示全部作为property导入',
+                            default=None)
         parser.add_argument('--skip_identify', '-i',
-                help='对应的列将不会做自动类型判断，' \
-                        '举例`--skip_identify name,id`将会将name和id不做类型判断，完全作为string导入' \
-                        '如果不填写则表示全部的选中列都会自动做类型判断')
+                            help='对应的列将不会做自动类型判断，' \
+                                 '举例`--skip_identify name,id`将会将name和id不做类型判断，完全作为string导入' \
+                                 '如果不填写则表示全部的选中列都会自动做类型判断')
         parser.add_argument('--add_cname', '-ac',
-                action='store_true',
-                help='是否添加中文名，只对event有效. 如果csv的表头是中文，程序会将对应的property名' \
-                        '改为对应的拼音。这时，如果将add_cname选中，会自动再程序的最后把中英文的映' \
-                        '射关系填上去，这样在Ui上看到的对应property就是中文的了.',
-                default=False)
+                            action='store_true',
+                            help='是否添加中文名，只对event有效. 如果csv的表头是中文，程序会将对应的property名' \
+                                 '改为对应的拼音。这时，如果将add_cname选中，会自动再程序的最后把中英文的映' \
+                                 '射关系填上去，这样在Ui上看到的对应property就是中文的了.',
+                            default=False)
         parser.add_argument('--web_url', '-w',
-                help='如果选择add_cname则必填，web访问的url，单机版类似http://localhost:8007, cloud' \
-                        '版类似http://xxx.cloud.sensorsdata.cn')
+                            help='如果选择add_cname则必填，web访问的url，单机版类似http://localhost:8007, cloud' \
+                                 '版类似http://xxx.cloud.sensorsdata.cn')
         parser.add_argument('--username', '-u',
-                help='如果选择add_cname则必填, web登录用户名')
+                            help='如果选择add_cname则必填, web登录用户名')
         parser.add_argument('--password', '-p',
-                help='如果选择add_cname则必填, web登录密码')
+                            help='如果选择add_cname则必填, web登录密码')
         parser.add_argument('--ignore_value',
-                action='append',
-                default=[],
-                help='指定某些值为空，比如指定 `--ignore_value null` 则所有的null都被认为是空值')
+                            action='append',
+                            default=[],
+                            help='指定某些值为空，比如指定 `--ignore_value null` 则所有的null都被认为是空值')
         parser.add_argument('--csv_delimiter',
-                type=str,
-                help='csv文件的列分隔符，默认为\',\'，只接受单字符参数，也可以传\\ + ascii的数字，比如\\9表示是\\t',
-                default=',')
+                            type=str,
+                            help='csv文件的列分隔符，默认为\',\'，只接受单字符参数，也可以传\\ + ascii的数字，比如\\9表示是\\t',
+                            default=',')
         parser.add_argument('--csv_quotechar',
-                type=str,
-                help='csv文件的引用字符，用于指定csv字符串的开始和结尾，默认为\'"\'，只接受单字符参数，也可以传\\ + ascii的数字，比如\\9表示是\\t',
-                default='"')
+                            type=str,
+                            help='csv文件的引用字符，用于指定csv字符串的开始和结尾，默认为\'"\'，只接受单字符参数，也可以传\\ + ascii的数字，比如\\9表示是\\t',
+                            default='"')
         parser.add_argument('--csv_prefetch_lines',
-                type=int,
-                help='csv文件预读行数，预读用于判断列的类型，默认为-1，即预读整个文件',
-                default='-1')
+                            type=int,
+                            help='csv文件预读行数，预读用于判断列的类型，默认为-1，即预读整个文件',
+                            default='-1')
         parser.add_argument('--file_encoding',
                             type=str,
                             help='csv文件编码格式，默认为 gbk 编码',
@@ -659,7 +670,7 @@ class CsvFormatter(BaseFormatter):
     def __update_meta(self):
         '''更新英文名到中文名的对应关系'''
         # 1.获取token
-        auth_response = self.__send_request( 
+        auth_response = self.__send_request(
             url='%s/api/auth/login?project=%s' % (self.web_url, self.project),
             content={'username': self.username, 'password': self.password},
             headers={'Content-Type': 'application/json'})
@@ -671,7 +682,8 @@ class CsvFormatter(BaseFormatter):
                 if i != 0:
                     time.sleep(30)
                 profile_response = self.__send_request(
-                    url='%s/api/property/user/properties?show_all=true&cache=false&project=%s' % (self.web_url, self.project),
+                    url='%s/api/property/user/properties?show_all=true&cache=false&project=%s' % (
+                        self.web_url, self.project),
                     headers={'sensorsdata-token': auth_token})
                 profile_dict = {x['name']: x['id'] for x in profile_response}
                 remote_ename_set = set(profile_dict.keys())
@@ -679,7 +691,6 @@ class CsvFormatter(BaseFormatter):
                 print(local_ename_set, '==', remote_ename_set)
                 if local_ename_set.issubset(remote_ename_set):
                     break
-
 
             # 3.更新元数据
             update_meta_request_content = {'property': []}
@@ -690,7 +701,7 @@ class CsvFormatter(BaseFormatter):
             update_meta_response = self.__send_request(
                 url='%s/api/property/user/properties?project=%s' % (self.web_url, self.project),
                 content=update_meta_request_content,
-                headers={'sensorsdata-token': auth_token,'Content-Type': 'application/json'})
+                headers={'sensorsdata-token': auth_token, 'Content-Type': 'application/json'})
             logger.info('successfully update cname for profile.')
         else:
             # self.subparser_name.endswith('event'):
@@ -717,15 +728,15 @@ class CsvFormatter(BaseFormatter):
                 for event in self.events:
                     event_id = event_dict[event]
                     properties_response = self.__send_request(
-                            url='%s/api/event/%s/properties?cache=false&project=%s' \
-                                    % (self.web_url, event_id, self.project),
-                            headers={'sensorsdata-token': auth_token})
+                        url='%s/api/event/%s/properties?cache=false&project=%s' \
+                            % (self.web_url, event_id, self.project),
+                        headers={'sensorsdata-token': auth_token})
                     properties_dict = {x['name']: x['id'] for x in properties_response['event']}
                     all_properties = [x['ename'] for x in self.column_schema.values()]
                     property_not_exists = [x for x in all_properties if x not in properties_dict]
                     if property_not_exists:
                         logger.warning('in event %s, properties%s have not loaded yet. waiting for 0.5 minute.' %
-                                (event, property_not_exists))
+                                       (event, property_not_exists))
                         all_checked = False
                         break
                     event_property_id[event] = properties_dict
@@ -738,12 +749,12 @@ class CsvFormatter(BaseFormatter):
                 update_meta_request_content = {'event_id': event_id, 'property': []}
                 for column in self.column_schema.values():
                     update_meta_request_content['property'].append({
-                            'property_id': properties_dict[column['ename']],
-                            'cname': column['cname']})
+                        'property_id': properties_dict[column['ename']],
+                        'cname': column['cname']})
                 update_meta_response = self.__send_request(
-                        url='%s/api/event/%s/meta?project=%s' % (self.web_url, event_id, self.project),
-                        content=update_meta_request_content,
-                        headers={'sensorsdata-token': auth_token,'Content-Type': 'application/json'})
+                    url='%s/api/event/%s/meta?project=%s' % (self.web_url, event_id, self.project),
+                    content=update_meta_request_content,
+                    headers={'sensorsdata-token': auth_token, 'Content-Type': 'application/json'})
                 logger.info('successfully update cname for event %s.' % event)
 
     def __get_column_schema(self, skip_identify_list, property_list, prefetch_lines):
@@ -756,22 +767,24 @@ class CsvFormatter(BaseFormatter):
                 # 头的列数比内容少的话 会多个key为None value为一个list的kv
                 if None in record:
                     raise Exception('csv error near line %d: content has %d more fields than header' \
-                            % (self.reader.line_num, len(record[None])))
+                                    % (self.reader.line_num, len(record[None])))
                 if self.is_event:
                     event = self.get_event(record)
                     if event not in self.events:
                         self.events.add(event)
-                
+
                 total_num += 1
                 if prefetch_lines > 0 and total_num > prefetch_lines:
                     break
-                
+
                 if not csv_header:
                     csv_header = list(record.keys())
                     if property_list:
                         for k in property_list:
                             if k not in csv_header:
-                                raise Exception('invalid param property_list: cannot find column "%s" in csv header %s' % (k, csv_header))
+                                raise Exception(
+                                    'invalid param property_list: cannot find column "%s" in csv header %s' % (
+                                        k, csv_header))
                     else:
                         property_list = csv_header
 
@@ -787,7 +800,7 @@ class CsvFormatter(BaseFormatter):
                     # 内容的列数比头少的话 对应key的value为none
                     if column is None:
                         raise Exception('csv error near line %d: no value for field %s' \
-                                % (self.reader.line_num, k))
+                                        % (self.reader.line_num, k))
                     # 空字符串跳过
                     if column in self.ignore_value:
                         continue
@@ -806,7 +819,8 @@ class CsvFormatter(BaseFormatter):
         # 3. 检查参数里面指定的列是否存在
         for k in skip_identify_list:
             if k not in csv_header:
-                raise Exception('invalid param skip_identify: cannot find column "%s" in csv header %s' % (k, csv_header))
+                raise Exception(
+                    'invalid param skip_identify: cannot find column "%s" in csv header %s' % (k, csv_header))
         return schema
 
     def __get_ename(self, cname):
@@ -846,6 +860,7 @@ class CsvFormatter(BaseFormatter):
         else:
             raise Exception('failed to request %s!' % url)
 
+
 class NginxFormatter(BaseFormatter):
     '''将Nginx日志导入
 注意会做一些url解析工作:
@@ -857,7 +872,7 @@ class NginxFormatter(BaseFormatter):
        {
            "__my_url_netloc": "www.abc.com",
            "__my_url_path": "/path/to/mine",
-           "__my_url_query": "k1=v1&k2=v", 
+           "__my_url_query": "k1=v1&k2=v",
            "__my_url_param_k1": "v1",
            "__my_url_param_k2": 2
        }
@@ -874,15 +889,16 @@ class NginxFormatter(BaseFormatter):
        -pl 'status,__my_url_netloc' -uf my_url -fp '.*\.gif' -fp '.*\.png'
        将access_log中(status, http_refer解析后的netloc)作为properties导入本地的私有部署版本，
        过滤所有对gif,png的请求。对应事件名全部为my_event, 每行是一个事件, request解析后参数中的
-       cookieId为distinct_id, time_local对应的列为time(格式类似22/Oct/2015:17:56:27 +0800), 
+       cookieId为distinct_id, time_local对应的列为time(格式类似22/Oct/2015:17:56:27 +0800),
        并且将my_url字段作为url解析。
-    3. format_importer.py nginx_profile -l 'http://localhost:8006/sa' -df __request_param_cookieId -f access.log 
+    3. format_importer.py nginx_profile -l 'http://localhost:8006/sa' -df __request_param_cookieId -f access.log
        -F '$remote_addr - $remote_user [$time_local] "$request" $status +++$request_body+++ "$http_referer"
        将access_log中所有列作为用户属性导入本地的私有部署版本，其中每行是一个用户, request解析后参
        数中的cookieId作为用户id.
     4. format_importer.py nginx_event @./conf/nginx_event.conf
        也可以修改conf/nginx_event.conf和conf/nginx_profile.conf来填写所有必要参数
     '''
+
     def __init__(self, args):
         '''初始化方法'''
         super().__init__(args, args.filename)
@@ -891,8 +907,9 @@ class NginxFormatter(BaseFormatter):
         if args.property_list_cnames:
             property_list_cnames = args.property_list_cnames.split(',')
             if len(property_list_cnames) != len(property_list):
-                raise Exception('name umatch! property_list contains %d properties, property_list_cnames contains %d names!' \
-                        % (len(property_list), len(property_list_cnames)))
+                raise Exception(
+                    'name umatch! property_list contains %d properties, property_list_cnames contains %d names!' \
+                    % (len(property_list), len(property_list_cnames)))
             self.property_cname_map = dict(zip(property_list, property_list_cnames))
         else:
             self.property_cname_map = {}
@@ -923,44 +940,44 @@ class NginxFormatter(BaseFormatter):
     def add_parser(cls, parser):
         '''初始化sub_parser'''
         parser.add_argument('--filename', '-f',
-                help='必填,nginx日志文件路径',
-                required=True)
+                            help='必填,nginx日志文件路径',
+                            required=True)
         parser.add_argument('--log_format', '-F',
-                help='必填,nginx日志配置，类似\'"$remote_addr" "$time_local" "$http_refer" "$status"\'',
-                required=True)
+                            help='必填,nginx日志配置，类似\'"$remote_addr" "$time_local" "$http_refer" "$status"\'',
+                            required=True)
         parser.add_argument('--property_list', '-pl',
-                type=str,
-                help='必填,用逗号分割选取的property, ' \
-                        '举例`-p http_refer,status`将会将http_refer和status两列作为property导入。',
-                required=True)
+                            type=str,
+                            help='必填,用逗号分割选取的property, ' \
+                                 '举例`-p http_refer,status`将会将http_refer和status两列作为property导入。',
+                            required=True)
         parser.add_argument('--property_list_cnames', '-pc',
-                type=str,
-                help='用逗号分割property的对应名称, 需要和--property_list一一对应',
-                default=None)
+                            type=str,
+                            help='用逗号分割property的对应名称, 需要和--property_list一一对应',
+                            default=None)
         parser.add_argument('--skip_identify', '-i',
-                help='对应的列将不会做自动类型判断，' \
-                        '举例`--skip_identify request_user,status`将会将request_user,status不做类型判断，'
-                        '完全作为string导入。如果不填写则表示全部的选中列都会自动做类型判断')
+                            help='对应的列将不会做自动类型判断，' \
+                                 '举例`--skip_identify request_user,status`将会将request_user,status不做类型判断，'
+                                 '完全作为string导入。如果不填写则表示全部的选中列都会自动做类型判断')
         parser.add_argument('--url_fields', '-uf',
-                help='对应的列将作为url解析，用逗号分割。解析后会生成__<字段名>' \
-                    '_<解析内容>这样命名的property, 解析内容包括netloc, path, query, param_<参数明>' \
-                    '。举例对于$my_url字段值为"http://www.abc.com/path/to/mine?k1=v1&k2=2", ' \
-                    '会解析为{"__my_url_netloc": "www.abc.com", "__my_url_path": "/path/to/mine", ' \
-                    '"__my_url_query": "k1=v1&k2=v", "__my_url_param_k1": "v1", "__my_url_param_k2": 2}' \
-                    '注意可以再property_list配置这些字段。默认是"http_referer"',
-                default='http_referer')
+                            help='对应的列将作为url解析，用逗号分割。解析后会生成__<字段名>' \
+                                 '_<解析内容>这样命名的property, 解析内容包括netloc, path, query, param_<参数明>' \
+                                 '。举例对于$my_url字段值为"http://www.abc.com/path/to/mine?k1=v1&k2=2", ' \
+                                 '会解析为{"__my_url_netloc": "www.abc.com", "__my_url_path": "/path/to/mine", ' \
+                                 '"__my_url_query": "k1=v1&k2=v", "__my_url_param_k1": "v1", "__my_url_param_k2": 2}' \
+                                 '注意可以再property_list配置这些字段。默认是"http_referer"',
+                            default='http_referer')
         parser.add_argument('--filter_path', '-fp',
-                help='过滤对应的path，可多选。这里的path取的是$request的path.支持正则. 举例 ' \
-                    '-fp \'.*\.gif\' -fp \'/index\.html\' 将过滤对gif的请求和index的请求过滤掉',
-                action='append',
-                default=[])
+                            help='过滤对应的path，可多选。这里的path取的是$request的path.支持正则. 举例 ' \
+                                 '-fp \'.*\.gif\' -fp \'/index\.html\' 将过滤对gif的请求和index的请求过滤掉',
+                            action='append',
+                            default=[])
         parser.add_argument('--ip_from', '-if',
-                help='哪个字段作为ip, 如果指定，则每条数据对应的ip为对应字段的值, 默认是$remote_addr',
-                default='remote_addr')
+                            help='哪个字段作为ip, 如果指定，则每条数据对应的ip为对应字段的值, 默认是$remote_addr',
+                            default='remote_addr')
         parser.add_argument('--ignore_value',
-                action='append',
-                default=[],
-                help='指定某些值为空，比如指定 `--ignore_value null` 则所有的null都被认为是空值')
+                            action='append',
+                            default=[],
+                            help='指定某些值为空，比如指定 `--ignore_value null` 则所有的null都被认为是空值')
 
     def get_total_num(self):
         '''返回总条数'''
@@ -1137,7 +1154,7 @@ class SQLFormatter(BaseFormatter):
             self.column_wrapper = lambda x: x
         else:
             self.column_wrapper = lambda x: x.upper()
-        for k in ['distinct_id_from', 'timestamp_from', 'event_from','item_type','item_id']:
+        for k in ['distinct_id_from', 'timestamp_from', 'event_from', 'item_type', 'item_id']:
             if hasattr(args, k) and getattr(args, k):
                 setattr(args, k, self.column_wrapper(getattr(args, k)))
         super().__init__(args, self.sql.replace('\t', ' ').replace('\n', ' '))
@@ -1148,14 +1165,16 @@ class SQLFormatter(BaseFormatter):
         self.columns = [self.column_wrapper(x[0]) for x in self.cursor.description]
         if self.__class__.bool_property_types:
             self.bool_property_list = [self.column_wrapper(x) for x in args.bool_property_list.split(',')] \
-                            if args.bool_property_list else []
+                if args.bool_property_list else []
             # 检查bool_property_list的参数是否合法 包括类型是否匹配
             self.type_dict = {self.column_wrapper(x[0]): x[1] for x in self.cursor.description}
             for p in self.bool_property_list:
                 if p not in self.type_dict:
-                    raise Exception('invalid param bool_property_list, property[%s] not found in %s' % (p, list(self.type_dict.keys())))
+                    raise Exception('invalid param bool_property_list, property[%s] not found in %s' % (
+                        p, list(self.type_dict.keys())))
                 if self.type_dict[p] not in self.__class__.bool_property_types:
-                    raise Exception('invalid param bool_property_list, property[%s] is not in %s' % (p, self.__class__.bool_property_types))
+                    raise Exception('invalid param bool_property_list, property[%s] is not in %s' % (
+                        p, self.__class__.bool_property_types))
 
     @classmethod
     @abc.abstractmethod
@@ -1175,17 +1194,17 @@ class SQLFormatter(BaseFormatter):
         # sql必须要么传入整个sql 要么指定一个sql文件
         sql_group = parser.add_mutually_exclusive_group(required=True)
         sql_group.add_argument('--sql', '-q',
-                help='和filename选一个必填，查询语句，建议加order by等方式保证多次查询结果顺序一致。')
+                               help='和filename选一个必填，查询语句，建议加order by等方式保证多次查询结果顺序一致。')
         sql_group.add_argument('--filename', '-f',
-                help='和sql选一个必填，查询语句所在的文件，建议加order by等方式保证多次查询结果顺序一致。')
+                               help='和sql选一个必填，查询语句所在的文件，建议加order by等方式保证多次查询结果顺序一致。')
         parser.add_argument('--case_sensitive',
-                help='可填,true/false,是否是大小写敏感，注意如果大小写不敏感会全部转化为大写, 默认为%s' % cls.default_is_case_sensitive,
-                default=cls.default_is_case_sensitive,
-                type=bool,
-                required=False)
+                            help='可填,true/false,是否是大小写敏感，注意如果大小写不敏感会全部转化为大写, 默认为%s' % cls.default_is_case_sensitive,
+                            default=cls.default_is_case_sensitive,
+                            type=bool,
+                            required=False)
         if cls.bool_property_types:
             parser.add_argument('--bool_property_list', '-bp',
-                    help='逗号分割的bool类型属性列表，会将对应的属性值为1的转化为true，0转化为false')
+                                help='逗号分割的bool类型属性列表，会将对应的属性值为1的转化为true，0转化为false')
         cls.add_db_parser(parser)
 
     def parse_record_value(self, key, value):
@@ -1238,7 +1257,7 @@ class MysqlFormatter(SQLFormatter):
     """提供sql，将mysql的数据导入
 使用举例:
     1. format_importer.py mysql_event -l 'http://localhost:8006/sa' -ef event -df user -td '2014-08-01 12:00:00'
-       -u root -p passwd -i localhost -P 1234 -d test_db 
+       -u root -p passwd -i localhost -P 1234 -d test_db
        -q 'select event, user, col from event where d = '2014-08-01' order by id'
        查询mysql中event表，将col对应的列作为properties导入本地的私有部署版本，其中每行是一个事件，
        event字段对应的是事件名, user字段对应的是distinct_id, 时间全部为2014-08-01 12:00:00
@@ -1247,8 +1266,8 @@ class MysqlFormatter(SQLFormatter):
        查询mysql中event表，将(col1, col2, col3)作为properties导入本地的私有部署版本，
        对应事件名全部为my_event, 每行是一个事件，user对应的列为distinct_id,
        time对应的列为time(格式类似20150130125959)
-    3. format_importer.py mysql_profile -l 'http://localhost:8006/sa' -df user 
-       -u root -p passwd -i localhost -P 1234 -d test_db 
+    3. format_importer.py mysql_profile -l 'http://localhost:8006/sa' -df user
+       -u root -p passwd -i localhost -P 1234 -d test_db
        -q 'select user, col from profile where d = '2014-08-01' order by id'
        查询mysql中profile表，将col对应的列作为用户属性导入本地的私有部署版本，其中每行是一个用户,
        user字段对应的是distinct_id
@@ -1268,40 +1287,40 @@ class MysqlFormatter(SQLFormatter):
         except ImportError as e:
             logger.error('pymysql not installed! please install pymysql by "python3 -m pip install PyMySQL --upgrade"')
             raise e
-        MysqlFormatter.bool_property_types = [pymysql.FIELD_TYPE.TINY, pymysql.FIELD_TYPE.SHORT,pymysql.FIELD_TYPE.LONG, pymysql.FIELD_TYPE.LONGLONG, pymysql.FIELD_TYPE.INT24]
+        MysqlFormatter.bool_property_types = [pymysql.FIELD_TYPE.TINY, pymysql.FIELD_TYPE.SHORT,
+                                              pymysql.FIELD_TYPE.LONG, pymysql.FIELD_TYPE.LONGLONG,
+                                              pymysql.FIELD_TYPE.INT24]
         super().__init__(args)
-
-
 
     @classmethod
     def create_connection(cls, args):
         import pymysql
         return pymysql.connect(
-                host=args.host,
-                port=args.port,
-                user=args.user, 
-                charset='utf8',
-                passwd=args.password,
-                db=args.db)
+            host=args.host,
+            port=args.port,
+            user=args.user,
+            charset='utf8',
+            passwd=args.password,
+            db=args.db)
 
     @classmethod
     def add_db_parser(cls, parser):
         parser.add_argument('--user', '-u',
-                help='必填，mysql的username',
-                required=True)
+                            help='必填，mysql的username',
+                            required=True)
         parser.add_argument('--password', '-p',
-                help='必填，mysql的password',
-                required=True)
+                            help='必填，mysql的password',
+                            required=True)
         parser.add_argument('--host', '-i',
-                help='必填，mysql的地址',
-                required=True)
+                            help='必填，mysql的地址',
+                            required=True)
         parser.add_argument('--port', '-P',
-                help='必填，mysql的端口号',
-                type=int,
-                required=True)
+                            help='必填，mysql的端口号',
+                            type=int,
+                            required=True)
         parser.add_argument('--db', '-d',
-                help='必填, mysql对应的db名',
-                required=True)
+                            help='必填, mysql对应的db名',
+                            required=True)
 
     def parse_record_value(self, key, value):
         # 把date类型转化成datetime
@@ -1312,6 +1331,7 @@ class MysqlFormatter(SQLFormatter):
         else:
             return super().parse_record_value(key, value)
 
+
 class JsonFormatter(BaseFormatter):
     """将json格式日志全部导入，日志格式参考https://www.sensorsdata.cn/manual/data_schema.html
 使用举例
@@ -1320,9 +1340,10 @@ class JsonFormatter(BaseFormatter):
 2. format_importer.py json -p ./log_dir -l 'http://localhost:8006/sa'
 将log_dir目录下所有文件导入本地的私有部署版本，每个文件都是日志文件，每行是一个符合我们要求的json
     """
+
     def __init__(self, args):
-        '''初始化方法 
-注意没有调用super() 这是因为读取json文件不需要指定distinct_from, event_from等等 
+        '''初始化方法
+注意没有调用super() 这是因为读取json文件不需要指定distinct_from, event_from等等
 而且也不区分event/profile
 只需要标记lib相关信息即可'''
         self.args = args
@@ -1344,7 +1365,7 @@ class JsonFormatter(BaseFormatter):
                     raise Exception('invalid path %s: %s is not a file' % (args.path, f))
                 self.file_list.append(abs_filename)
         else:
-            raise Exception('invalid path %s: %s cannot find file or directory' % (args.path, f))
+            raise Exception('invalid path %s cannot find file or directory' % (args.path))
         self.file_list = sorted(self.file_list)
         logger.info('total %d json files' % len(self.file_list))
         logger.debug(self.file_list)
@@ -1363,11 +1384,11 @@ class JsonFormatter(BaseFormatter):
         self.consumer = consumer
 
     @classmethod
-    def add_parser(cls,parser):
+    def add_parser(cls, parser):
         '''初始化sub_parser'''
         parser.add_argument('--path', '-p',
-                help='必填,日志的文件/目录路径',
-                required=True)
+                            help='必填,日志的文件/目录路径',
+                            required=True)
 
     def get_total_num(self):
         '''返回总条数'''
@@ -1406,13 +1427,14 @@ class JsonFormatter(BaseFormatter):
             self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
 
     # def send_item(self,l):
-        # record = json.loads(l)
-        # data = sensorsanalytics.SensorsAnalytics._normalize_item_data(record)
-        # self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
+    # record = json.loads(l)
+    # data = sensorsanalytics.SensorsAnalytics._normalize_item_data(record)
+    # self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
 
     def close(self):
         self.consumer.close()
- 
+
+
 class OracleFormatter(SQLFormatter):
     """提供sql，将oracle的数据导入
 使用举例:
@@ -1429,12 +1451,14 @@ class OracleFormatter(SQLFormatter):
     bool_property_types = ['xxx']
     # 默认大小写不敏感
     default_is_case_sensitive = False
+
     def __init__(self, args):
-        '''初始化方法'''
+        """初始化方法"""
         try:
             import cx_Oracle
         except ImportError as e:
-            logger.error('cx_Oracle not installed! please install cx_Oracle by "python3 -m pip install cx_Oracle --upgrade"')
+            logger.error(
+                'cx_Oracle not installed! please install cx_Oracle by "python3 -m pip install cx_Oracle --upgrade"')
             raise e
         OracleFormatter.bool_property_types = [cx_Oracle.NUMBER]
         super().__init__(args)
@@ -1442,28 +1466,39 @@ class OracleFormatter(SQLFormatter):
     @classmethod
     def create_connection(cls, args):
         import cx_Oracle
-        return cx_Oracle.connect(
-                user=args.user, 
+        if args.nls_lang != 'utf-8':
+            os.environ['NLS_LANG'] = args.nls_lang
+            return cx_Oracle.connect(
+                user=args.user,
+                password=args.password,
+                dsn=args.dsn)
+        else:
+            return cx_Oracle.connect(
+                user=args.user,
                 password=args.password,
                 dsn=args.dsn,
                 encoding='utf8')
 
     def get_total_num(self):
-        '''oracle的接口无法返回具体查询条数'''
+        """oracle的接口无法返回具体查询条数"""
         return -1
 
     @classmethod
     def add_db_parser(cls, parser):
-        '''初始化sub_parser'''
+        """初始化sub_parser"""
         parser.add_argument('--user', '-u',
-                help='必填，oracle的username',
-                required=True)
+                            help='必填，oracle的username',
+                            required=True)
         parser.add_argument('--password', '-p',
-                help='必填，oracle的password',
-                required=True)
+                            help='必填，oracle的password',
+                            required=True)
         parser.add_argument('--dsn', '-dsn',
-                help='必填，oracle的dsn',
-                required=True)
+                            help='必填，oracle的dsn',
+                            required=True)
+        parser.add_argument('--nls_lang',
+                            type=str,
+                            help='数据库字符集，默认 utf-8',
+                            default='utf-8')
 
     def parse_record_value(self, key, value):
         # 把clob类型转化成str
@@ -1475,7 +1510,7 @@ class OracleFormatter(SQLFormatter):
 
 
 #######
-# 
+#
 # main需要的
 #
 ######
@@ -1507,7 +1542,7 @@ def main():
     error = False
     if total > 0:
         counter['total'] = total
-        progress_interval = 10000 if total < 10000 * 20 else (total/100)
+        progress_interval = 10000 if total < 10000 * 20 else (total / 100)
     else:
         progress_interval = 10000
     for record in formatter.read_records():
@@ -1538,7 +1573,7 @@ def main():
 
     if error:
         logger.error('failed to import, please fix it and run with[--skip_cnt %d] again!' %
-                counter['total_write'])
+                     counter['total_write'])
         return 1
     else:
         logger.info('counter = %s.' % counter)
@@ -1547,6 +1582,7 @@ def main():
         else:
             logger.info('数据已发送到神策分析，请查看埋点管理，确认数据是否校验通过')
         return 0
+
 
 if __name__ == '__main__':
     sys.exit(main())
