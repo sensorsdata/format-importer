@@ -37,7 +37,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.6'
+__version__ = '1.13.7'
 
 # build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -56,11 +56,6 @@ console = logging.StreamHandler()
 console.setLevel(logging.INFO)
 console.setFormatter(formater)
 logger.addHandler(console)
-# 单个文件最大1m 最多10个文件
-fa = logging.handlers.RotatingFileHandler(log_file, 'a', 1024 * 1024, 10)
-fa.setLevel(logging.DEBUG)
-fa.setFormatter(formater)
-logger.addHandler(fa)
 
 
 class SAArgumentParser(argparse.ArgumentParser):
@@ -216,6 +211,10 @@ def parse_args():
     parent_parser.add_argument('--project', '-j',
                                help='可选，指定的project名，默认是None',
                                default=None,
+                               required=False)
+    parent_parser.add_argument('--log_level', '-lv',
+                               help='可选，指定日志输出最小等级，默认 DEBUG',
+                               default='DEBUG',
                                required=False)
 
     # 1.2 断点续传
@@ -1515,7 +1514,14 @@ class OracleFormatter(SQLFormatter):
 #
 ######
 def main():
+
     args = parse_args()
+    # 单个文件最大1m 最多10个文件
+    fa = logging.handlers.RotatingFileHandler(log_file, 'a', 1024 * 1024, 10)
+    fa.setLevel(args.log_level)
+    fa.setFormatter(formater)
+    logger.addHandler(fa)
+
     logger.debug('args: %s' % pprint.pformat(vars(args)))
 
     formatter_name = '%sFormatter' % args.subparser_name.split('_')[0].title()
