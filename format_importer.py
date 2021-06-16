@@ -1561,6 +1561,7 @@ def main():
                     logger.info('progress %s' % counter)
             counter['total_read'] += 1
             if skip_lines_cnt_down > 0:
+                counter['total_write'] += 1
                 skip_lines_cnt_down -= 1
                 continue
             record = formatter.parse_record(record)
