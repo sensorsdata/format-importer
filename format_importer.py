@@ -37,7 +37,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.7'
+__version__ = '1.13.8'
 
 # build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -45,17 +45,46 @@ sys.path.append(current_dir)
 import pypinyin
 import sensorsanalytics
 
+
+class Logger(object):
+    def __init__(self, filename, fmt='%(asctime)s %(lineno)d %(levelname)s %(message)s'):
+        self.filename = filename
+        self.format_str = logging.Formatter(fmt)  # 设置日志格式
+
+        self.logger = logging.getLogger(filename)
+        self.logger.setLevel(logging.DEBUG)  # 设置日志级别
+
+    def consoleHandler(self, console_level):
+        sh = logging.StreamHandler()  # 往屏幕上输出
+        sh.setFormatter(self.format_str)  # 设置屏幕上显示的格式
+        sh.setLevel(console_level)
+        self.logger.addHandler(sh)  # 把对象加到logger里
+
+    def fileHandler(self, file_level, file_path):
+        th = logging.handlers.RotatingFileHandler(file_path, 'a', 1024*2014, 10)
+        th.setFormatter(self.format_str)  # 设置文件里写入的格式
+        th.setLevel(file_level)
+        self.logger.addHandler(th)
+
+    def debug(self, info):
+        self.logger.debug(info)
+
+    def info(self, info):
+        print(info)
+        self.logger.info(info)
+
+    def warning(self, info):
+        self.logger.warning(info)
+
+    def error(self, info):
+        self.logger.error(info)
+
+
 logger_name = 'format_importer'
 log_file = '%s/format_importer.log' % current_dir
 # 配置logger整体
-logger = logging.getLogger(logger_name)
-logger.setLevel(logging.DEBUG)
-formater = logging.Formatter('%(asctime)s %(lineno)d %(levelname)s %(message)s')
-# 配置console 打印INFO级别
-console = logging.StreamHandler()
-console.setLevel(logging.INFO)
-console.setFormatter(formater)
-logger.addHandler(console)
+logger = Logger(filename=logger_name)
+logger.consoleHandler(logging.INFO)
 
 
 class SAArgumentParser(argparse.ArgumentParser):
@@ -1516,11 +1545,14 @@ class OracleFormatter(SQLFormatter):
 def main():
 
     args = parse_args()
-    # 单个文件最大1m 最多10个文件
-    fa = logging.handlers.RotatingFileHandler(log_file, 'a', 1024 * 1024, 10)
-    fa.setLevel(args.log_level)
-    fa.setFormatter(formater)
-    logger.addHandler(fa)
+    # 文件日志输出设置，单个文件最大1m 最多10个文件
+    logger.fileHandler(args.log_level, file_path=log_file)
+
+    # 导入数据错误输出到 invalid_records.log 文件
+    errlogger_name = 'invalid_records'
+    errlogger_file = '%s/invalid_records.log' % current_dir
+    errlogger = Logger(errlogger_name)
+    errlogger.fileHandler(logging.ERROR, errlogger_file)
 
     logger.debug('args: %s' % pprint.pformat(vars(args)))
 
@@ -1528,7 +1560,7 @@ def main():
     formatter = globals()[formatter_name](args)
 
     if args.output_file:
-        logger.info('logging file to %s only', args.output_file)
+        logger.info('logging file to %s only' % args.output_file)
         consumer = sensorsanalytics.LoggingConsumer(args.output_file)
     else:
         check_url(args.url)
@@ -1561,6 +1593,7 @@ def main():
                     logger.info('progress %s' % counter)
             counter['total_read'] += 1
             if skip_lines_cnt_down > 0:
+                counter['total_write'] += 1
                 skip_lines_cnt_down -= 1
                 continue
             record = formatter.parse_record(record)
@@ -1571,6 +1604,7 @@ def main():
             logger.warning('failed to parse line %d' % counter['total_read'])
             logger.warning(traceback.format_exc())
             logger.warning(e)
+            errlogger.logger.error(record)
             if args.quit_on_error:
                 error = True
                 break
