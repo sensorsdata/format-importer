@@ -13,13 +13,11 @@ import argparse
 import csv
 import datetime
 import decimal
-import hashlib
 import json
 import logging
 import logging.handlers
 import os
 import pprint
-import random
 import re
 import sys
 import time
@@ -37,7 +35,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.8'
+__version__ = '1.13.9'
 
 # build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -170,7 +168,6 @@ def guess_str_type(target_str):
             return 'datetime'
         except:
             pass
-
     # 2. 是否是数字
     try:
         float(target_str)
@@ -197,6 +194,8 @@ def format_str(target_str, str_type):
             return datetime.datetime.strptime(target_str, '%Y-%m-%d %H:%M:%S.%f')
         else:
             return datetime.datetime.strptime(target_str, '%Y-%m-%d')
+    elif str_type == 'list':
+        return target_str.split('|')
     else:
         return target_str
 
@@ -589,6 +588,8 @@ class CsvFormatter(BaseFormatter):
         self.ignore_value = args.ignore_value
         self.ignore_value.append('')
         logger.debug('ignore %s' % self.ignore_value)
+        # 得到 list 类型的列
+        self.list_type = args.list_type
         self.subparser_name = args.subparser_name
         # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
         if (not self.is_item) and (not self.is_signup) and (args.property_list != None) and (args.property_list != ""):
@@ -663,6 +664,10 @@ class CsvFormatter(BaseFormatter):
                             type=str,
                             help='csv文件编码格式，默认为 gbk 编码',
                             default='utf-8')
+        parser.add_argument('--list_type',
+                            action='append',
+                            default=[],
+                            help='指定某些列为 list')
 
     def get_total_num(self):
         '''返回总条数'''
@@ -832,10 +837,15 @@ class CsvFormatter(BaseFormatter):
                     # 空字符串跳过
                     if column in self.ignore_value:
                         continue
-                    # 只要有一个是字符串就全当字符串用
-                    guess_type = guess_str_type(column)
+                    # 指定类型
+                    if k in self.list_type:
+                        guess_type = 'list'
+                    else:
+                        guess_type = guess_str_type(column)
                     if guess_type == 'string':
                         column_type[k] = 'string'
+                    elif guess_type == 'list':
+                        column_type[k] = 'list'
                     elif k not in column_type:
                         column_type[k] = guess_type
         except csv.Error as e:
@@ -1444,13 +1454,14 @@ class JsonFormatter(BaseFormatter):
             self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
         else:
             record['time_free'] = True
-            if 'lib' not in record:
-                record['lib'] = self.default_properties
+            record['lib'] = self.default_properties
             if 'project' not in record and self.args.project:
                 record['project'] = self.args.project
             # 坑坑：雨晗的代码里面即使是profile也需要有time 所以这里加上个time 反正不生效
             if record['type'].startswith('profile_'):
                 record['time'] = int(time.time() * 1000)
+            if '$lib' not in record['properties']:
+                record['properties']['$lib'] = 'FormatImporter'
             data = sensorsanalytics.SensorsAnalytics._normalize_data(record)
             self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
 
