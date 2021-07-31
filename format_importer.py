@@ -35,7 +35,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.9'
+__version__ = '1.13.10'
 
 # build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1460,8 +1460,10 @@ class JsonFormatter(BaseFormatter):
             # 坑坑：雨晗的代码里面即使是profile也需要有time 所以这里加上个time 反正不生效
             if record['type'].startswith('profile_'):
                 record['time'] = int(time.time() * 1000)
-            if '$lib' not in record['properties']:
-                record['properties']['$lib'] = 'FormatImporter'
+            # $lib 只在事件属性中存在
+            if record['type'].startswith('track'):
+                if '$lib' not in record['properties']:
+                    record['properties']['$lib'] = 'FormatImporter'
             data = sensorsanalytics.SensorsAnalytics._normalize_data(record)
             self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
 
