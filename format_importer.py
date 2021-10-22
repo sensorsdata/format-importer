@@ -35,7 +35,7 @@ except ImportError:
     import urllib2
     import urllib
 
-__version__ = '1.13.10'
+__version__ = '1.13.11'
 
 # build的时候会把python sdk和 pypinyin, pymysql都拷贝过来
 current_dir = os.path.dirname(os.path.abspath(__file__))
@@ -1447,6 +1447,15 @@ class JsonFormatter(BaseFormatter):
 
     def send(self, l):
         record = json.loads(l)
+        record['lib'] = self.default_properties
+        # 先判断最外层是否有 project
+        if 'project' not in record:
+            if '$project' not in record['properties']:
+                if self.args.project:
+                    record['project'] = self.args.project
+            else:
+                record['project'] = record['properties']['$project']
+                del (record['properties']['$project'])
         '''直接调用雨晗的那个接口 注意需要加下lib和project 以及timefree'''
         if record['type'].startswith('item'):
             record['time'] = int(time.time() * 1000)
@@ -1454,9 +1463,6 @@ class JsonFormatter(BaseFormatter):
             self.consumer.send(sensorsanalytics.SensorsAnalytics._json_dumps(data))
         else:
             record['time_free'] = True
-            record['lib'] = self.default_properties
-            if 'project' not in record and self.args.project:
-                record['project'] = self.args.project
             # 坑坑：雨晗的代码里面即使是profile也需要有time 所以这里加上个time 反正不生效
             if record['type'].startswith('profile_'):
                 record['time'] = int(time.time() * 1000)
