@@ -589,7 +589,10 @@ class CsvFormatter(BaseFormatter):
         self.ignore_value.append('')
         logger.debug('ignore %s' % self.ignore_value)
         # 得到 list 类型的列
-        self.list_type = args.list_type[0].split(',')
+        if (len(args.list_type) == 0):
+            self.list_type = args.list_type
+        else:
+            self.list_type = args.list_type[0].split(',')
         self.subparser_name = args.subparser_name
         # 支持 property_list 与 distinct_id_from 共用同一列的特殊需求
         if (not self.is_item) and (not self.is_signup) and (args.property_list != None) and (args.property_list != ""):
